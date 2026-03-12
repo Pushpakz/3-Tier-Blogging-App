@@ -1,5 +1,5 @@
 # ==============================================================
-# Jerney EKS Cluster - Auto Mode
+# ScriptNest EKS Cluster - Auto Mode
 # ==============================================================
 
 data "aws_availability_zones" "available" {

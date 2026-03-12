@@ -10,10 +10,10 @@ terraform {
 
   # Uncomment and configure for remote state (recommended for teams)
   # backend "s3" {
-  #   bucket         = "jerney-terraform-state"
+  #   bucket         = "ScriptNest-terraform-state"
   #   key            = "eks/terraform.tfstate"
   #   region         = "us-east-1"
-  #   dynamodb_table = "jerney-tf-lock"
+  #   dynamodb_table = "ScriptNest-tf-lock"
   #   encrypt        = true
   # }
 }
@@ -23,7 +23,7 @@ provider "aws" {
 
   default_tags {
     tags = {
-      Project     = "Jerney"
+      Project     = "ScriptNest"
       Environment = var.environment
       ManagedBy   = "Terraform"
     }

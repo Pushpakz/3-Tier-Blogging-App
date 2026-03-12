@@ -2,18 +2,18 @@ services:
   # ---- PostgreSQL Database ----
   db:
     image: postgres:16-alpine
-    container_name: jerney-db
+    container_name: ScriptNest-db
     restart: unless-stopped
     environment:
-      POSTGRES_USER: jerney_user
-      POSTGRES_PASSWORD: jerney_pass_2026
-      POSTGRES_DB: jerney_db
+      POSTGRES_USER: ScriptNest_user
+      POSTGRES_PASSWORD: ScriptNest_pass_2026
+      POSTGRES_DB: ScriptNest_db
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U jerney_user -d jerney_db"]
+      test: ["CMD-SHELL", "pg_isready -U ScriptNest_user -d ScriptNest_db"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -28,15 +28,15 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: jerney-backend
+    container_name: ScriptNest-backend
     restart: unless-stopped
     environment:
       PORT: "5000"
-      DB_USER: jerney_user
-      DB_PASSWORD: jerney_pass_2026
+      DB_USER: ScriptNest_user
+      DB_PASSWORD: ScriptNest_pass_2026
       DB_HOST: db
       DB_PORT: "5432"
-      DB_NAME: jerney_db
+      DB_NAME: ScriptNest_db
     expose:
       - "5000"
     depends_on:
@@ -54,7 +54,7 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: jerney-frontend
+    container_name: ScriptNest-frontend
     restart: unless-stopped
     ports:
       - "80:8080"

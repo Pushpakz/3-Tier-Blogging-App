@@ -1,5 +1,5 @@
 # ==============================================================
-# Jerney Blog Platform - Kubernetes Manifest (Single File)
+# ScriptNest Blog Platform - Kubernetes Manifest (Single File)
 # Includes: Namespace, Secrets, PVC (EBS), DB, Backend, Frontend
 # ==============================================================
 
@@ -7,25 +7,25 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: jerney
+  name: ScriptNest
   labels:
-    app.kubernetes.io/part-of: jerney
+    app.kubernetes.io/part-of: ScriptNest
 
 ---
 # ---- Database Secret ----
 # In production, use External Secrets Operator or Sealed Secrets.
 # This is base64 encoded for demo purposes.
-# echo -n 'jerney_user' | base64 → amVybmV5X3VzZXI=
-# echo -n 'jerney_pass_2026' | base64 → amVybmV5X3Bhc3NfMjAyNg==
-# echo -n 'jerney_db' | base64 → amVybmV5X2Ri
+# echo -n 'ScriptNest_user' | base64 → amVybmV5X3VzZXI=
+# echo -n 'ScriptNest_pass_2026' | base64 → amVybmV5X3Bhc3NfMjAyNg==
+# echo -n 'ScriptNest_db' | base64 → amVybmV5X2Ri
 
 apiVersion: v1
 kind: Secret
 metadata:
-  name: jerney-db-secret
-  namespace: jerney
+  name: ScriptNest-db-secret
+  namespace: ScriptNest
   labels:
-    app.kubernetes.io/part-of: jerney
+    app.kubernetes.io/part-of: ScriptNest
 type: Opaque
 data:
   POSTGRES_USER: amVybmV5X3VzZXI=
@@ -37,7 +37,7 @@ data:
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
-  name: jerney-ebs-sc
+  name: ScriptNest-ebs-sc
 provisioner: ebs.csi.eks.amazonaws.com
 parameters:
   type: gp3
@@ -51,15 +51,15 @@ allowVolumeExpansion: true
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: jerney-db-pvc
-  namespace: jerney
+  name: ScriptNest-db-pvc
+  namespace: ScriptNest
   labels:
-    app.kubernetes.io/part-of: jerney
+    app.kubernetes.io/part-of: ScriptNest
     app.kubernetes.io/component: database
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: jerney-ebs-sc
+  storageClassName: ScriptNest-ebs-sc
   resources:
     requests:
       storage: 10Gi
@@ -69,11 +69,11 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: jerney-db
-  namespace: jerney
+  name: ScriptNest-db
+  namespace: ScriptNest
   labels:
-    app.kubernetes.io/name: jerney-db
-    app.kubernetes.io/part-of: jerney
+    app.kubernetes.io/name: ScriptNest-db
+    app.kubernetes.io/part-of: ScriptNest
     app.kubernetes.io/component: database
 spec:
   replicas: 1
@@ -81,12 +81,12 @@ spec:
     type: Recreate # Required for RWO volumes
   selector:
     matchLabels:
-      app.kubernetes.io/name: jerney-db
+      app.kubernetes.io/name: ScriptNest-db
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: jerney-db
-        app.kubernetes.io/part-of: jerney
+        app.kubernetes.io/name: ScriptNest-db
+        app.kubernetes.io/part-of: ScriptNest
         app.kubernetes.io/component: database
     spec:
       # Security: don't automount service account token (DB doesn't need K8s API)
@@ -103,7 +103,7 @@ spec:
               protocol: TCP
           envFrom:
             - secretRef:
-                name: jerney-db-secret
+                name: ScriptNest-db-secret
           volumeMounts:
             - name: db-storage
               mountPath: /var/lib/postgresql/data
@@ -122,36 +122,36 @@ spec:
             runAsNonRoot: false            # Postgres image runs initdb as root then drops
           livenessProbe:
             exec:
-              command: ["pg_isready", "-U", "jerney_user", "-d", "jerney_db"]
+              command: ["pg_isready", "-U", "ScriptNest_user", "-d", "ScriptNest_db"]
             initialDelaySeconds: 15
             periodSeconds: 10
             timeoutSeconds: 5
           readinessProbe:
             exec:
-              command: ["pg_isready", "-U", "jerney_user", "-d", "jerney_db"]
+              command: ["pg_isready", "-U", "ScriptNest_user", "-d", "ScriptNest_db"]
             initialDelaySeconds: 5
             periodSeconds: 5
             timeoutSeconds: 3
       volumes:
         - name: db-storage
           persistentVolumeClaim:
-            claimName: jerney-db-pvc
+            claimName: ScriptNest-db-pvc
 
 ---
 # ---- PostgreSQL Service (ClusterIP — internal only) ----
 apiVersion: v1
 kind: Service
 metadata:
-  name: jerney-db
-  namespace: jerney
+  name: ScriptNest-db
+  namespace: ScriptNest
   labels:
-    app.kubernetes.io/name: jerney-db
-    app.kubernetes.io/part-of: jerney
+    app.kubernetes.io/name: ScriptNest-db
+    app.kubernetes.io/part-of: ScriptNest
     app.kubernetes.io/component: database
 spec:
   type: ClusterIP
   selector:
-    app.kubernetes.io/name: jerney-db
+    app.kubernetes.io/name: ScriptNest-db
   ports:
     - port: 5432
       targetPort: 5432
@@ -162,22 +162,22 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: jerney-backend
-  namespace: jerney
+  name: ScriptNest-backend
+  namespace: ScriptNest
   labels:
-    app.kubernetes.io/name: jerney-backend
-    app.kubernetes.io/part-of: jerney
+    app.kubernetes.io/name: ScriptNest-backend
+    app.kubernetes.io/part-of: ScriptNest
     app.kubernetes.io/component: backend
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app.kubernetes.io/name: jerney-backend
+      app.kubernetes.io/name: ScriptNest-backend
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: jerney-backend
-        app.kubernetes.io/part-of: jerney
+        app.kubernetes.io/name: ScriptNest-backend
+        app.kubernetes.io/part-of: ScriptNest
         app.kubernetes.io/component: backend
     spec:
       automountServiceAccountToken: false
@@ -192,15 +192,15 @@ spec:
             - sh
             - -c
             - |
-              echo "Waiting for jerney-db:5432..."
-              until nc -z jerney-db 5432; do
+              echo "Waiting for ScriptNest-db:5432..."
+              until nc -z ScriptNest-db 5432; do
                 echo "DB not ready, retrying in 3s..."
                 sleep 3
               done
               echo "DB is ready!"
       containers:
         - name: backend
-          image: ghcr.io/Pushpakz/3-Tier-Blogging-App/jerney-backend:92a5a16
+          image: ghcr.io/Pushpakz/3-Tier-Blogging-App/ScriptNest-backend:92a5a16
           ports:
             - containerPort: 5000
               protocol: TCP
@@ -208,23 +208,23 @@ spec:
             - name: PORT
               value: "5000"
             - name: DB_HOST
-              value: "jerney-db"
+              value: "ScriptNest-db"
             - name: DB_PORT
               value: "5432"
             - name: DB_USER
               valueFrom:
                 secretKeyRef:
-                  name: jerney-db-secret
+                  name: ScriptNest-db-secret
                   key: POSTGRES_USER
             - name: DB_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: jerney-db-secret
+                  name: ScriptNest-db-secret
                   key: POSTGRES_PASSWORD
             - name: DB_NAME
               valueFrom:
                 secretKeyRef:
-                  name: jerney-db-secret
+                  name: ScriptNest-db-secret
                   key: POSTGRES_DB
           resources:
             requests:
@@ -262,16 +262,16 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: jerney-backend
-  namespace: jerney
+  name: ScriptNest-backend
+  namespace: ScriptNest
   labels:
-    app.kubernetes.io/name: jerney-backend
-    app.kubernetes.io/part-of: jerney
+    app.kubernetes.io/name: ScriptNest-backend
+    app.kubernetes.io/part-of: ScriptNest
     app.kubernetes.io/component: backend
 spec:
   type: ClusterIP
   selector:
-    app.kubernetes.io/name: jerney-backend
+    app.kubernetes.io/name: ScriptNest-backend
   ports:
     - port: 5000
       targetPort: 5000
@@ -282,22 +282,22 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: jerney-frontend
-  namespace: jerney
+  name: ScriptNest-frontend
+  namespace: ScriptNest
   labels:
-    app.kubernetes.io/name: jerney-frontend
-    app.kubernetes.io/part-of: jerney
+    app.kubernetes.io/name: ScriptNest-frontend
+    app.kubernetes.io/part-of: ScriptNest
     app.kubernetes.io/component: frontend
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app.kubernetes.io/name: jerney-frontend
+      app.kubernetes.io/name: ScriptNest-frontend
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: jerney-frontend
-        app.kubernetes.io/part-of: jerney
+        app.kubernetes.io/name: ScriptNest-frontend
+        app.kubernetes.io/part-of: ScriptNest
         app.kubernetes.io/component: frontend
     spec:
       automountServiceAccountToken: false
@@ -307,7 +307,7 @@ spec:
           effect: "NoSchedule"
       containers:
         - name: frontend
-          image: ghcr.io/Pushpakz/3-Tier-Blogging-App/jerney-frontend:92a5a16
+          image: ghcr.io/Pushpakz/3-Tier-Blogging-App/ScriptNest-frontend:92a5a16
           ports:
             - containerPort: 8080
               protocol: TCP
@@ -342,21 +342,21 @@ spec:
 ---
 # ---- Frontend Service (NodePort — for access via port-forward or node IP) ----
 # NOTE: Changed from LoadBalancer because this AWS account does not support
-# creating load balancers. Use `kubectl port-forward svc/jerney-frontend 8080:80 -n jerney`
+# creating load balancers. Use `kubectl port-forward svc/ScriptNest-frontend 8080:80 -n ScriptNest`
 # to access the frontend locally.
 apiVersion: v1
 kind: Service
 metadata:
-  name: jerney-frontend
-  namespace: jerney
+  name: ScriptNest-frontend
+  namespace: ScriptNest
   labels:
-    app.kubernetes.io/name: jerney-frontend
-    app.kubernetes.io/part-of: jerney
+    app.kubernetes.io/name: ScriptNest-frontend
+    app.kubernetes.io/part-of: ScriptNest
     app.kubernetes.io/component: frontend
 spec:
   type: NodePort
   selector:
-    app.kubernetes.io/name: jerney-frontend
+    app.kubernetes.io/name: ScriptNest-frontend
   ports:
     - port: 80
       targetPort: 8080
@@ -367,19 +367,19 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: jerney-db-allow-backend-only
-  namespace: jerney
+  name: ScriptNest-db-allow-backend-only
+  namespace: ScriptNest
 spec:
   podSelector:
     matchLabels:
-      app.kubernetes.io/name: jerney-db
+      app.kubernetes.io/name: ScriptNest-db
   policyTypes:
     - Ingress
   ingress:
     - from:
         - podSelector:
             matchLabels:
-              app.kubernetes.io/name: jerney-backend
+              app.kubernetes.io/name: ScriptNest-backend
       ports:
         - port: 5432
           protocol: TCP
@@ -389,19 +389,19 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: jerney-backend-allow-frontend-only
-  namespace: jerney
+  name: ScriptNest-backend-allow-frontend-only
+  namespace: ScriptNest
 spec:
   podSelector:
     matchLabels:
-      app.kubernetes.io/name: jerney-backend
+      app.kubernetes.io/name: ScriptNest-backend
   policyTypes:
     - Ingress
   ingress:
     - from:
         - podSelector:
             matchLabels:
-              app.kubernetes.io/name: jerney-frontend
+              app.kubernetes.io/name: ScriptNest-frontend
       ports:
         - port: 5000
           protocol: TCP
