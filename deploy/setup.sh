@@ -50,7 +50,7 @@ echo "📁 Setting up project..."
 sudo mkdir -p /var/www/ScriptNest
 sudo chown -R $USER:$USER /var/www/ScriptNest
 
-# Copy project files (assumes you've transferred them to ~/Jerney)
+# Copy project files (assumes you've transferred them to ~/ScriptNest)
 cp -r ~/ScriptNest/* /var/www/ScriptNest/
 
 # --- Install backend dependencies ---
