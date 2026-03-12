@@ -200,7 +200,7 @@ spec:
               echo "DB is ready!"
       containers:
         - name: backend
-          image: ghcr.io/Pushpakz/3-Tier-Blogging-App/ScriptNest-backend:92a5a16
+          image: ghcr.io/Pushpakz/3-Tier-Blogging-App/ScriptNest-backend:5cbc885
           ports:
             - containerPort: 5000
               protocol: TCP
@@ -307,7 +307,7 @@ spec:
           effect: "NoSchedule"
       containers:
         - name: frontend
-          image: ghcr.io/Pushpakz/3-Tier-Blogging-App/ScriptNest-frontend:92a5a16
+          image: ghcr.io/Pushpakz/3-Tier-Blogging-App/ScriptNest-frontend:5cbc885
           ports:
             - containerPort: 8080
               protocol: TCP
