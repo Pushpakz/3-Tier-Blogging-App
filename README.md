@@ -1,4 +1,4 @@
-# 🛤️ Jerney — Blog Platform
+# 🛤️ ScriptNest — Blog Platform
 
 A Gen-Z vibe blog platform built with a 3-tier architecture — React frontend, Node.js backend, and PostgreSQL database.
 
@@ -40,7 +40,7 @@ A Gen-Z vibe blog platform built with a 3-tier architecture — React frontend, 
 ## 📁 Project Structure
 
 ```
-Jerney/
+ScriptNest/
 ├── frontend/                # React (Vite) frontend
 │   ├── src/                 # React components & pages
 │   ├── nginx.conf           # Nginx config for serving the app
@@ -50,7 +50,7 @@ Jerney/
 │   └── package.json
 ├── deploy/                  # EC2 deployment scripts
 │   ├── setup.sh             # One-click EC2 setup script
-│   └── jerney-nginx.conf    # Nginx reverse proxy config
+│   └── ScriptNest-nginx.conf    # Nginx reverse proxy config
 └── README.md
 ```
 
@@ -68,7 +68,7 @@ Jerney/
 
 ```bash
 # From your local machine
-scp -r -i your-key.pem ./Jerney ubuntu@<EC2_PUBLIC_IP>:~/Jerney
+scp -r -i your-key.pem ./ScriptNest ubuntu@<EC2_PUBLIC_IP>:~/ScriptNest
 ```
 
 ### Step 2: SSH into the Instance
@@ -82,7 +82,7 @@ ssh -i your-key.pem ubuntu@<EC2_PUBLIC_IP>
 The `deploy/setup.sh` script installs everything and configures the app automatically:
 
 ```bash
-cd ~/Jerney
+cd ~/ScriptNest
 chmod +x deploy/setup.sh
 ./deploy/setup.sh
 ```
