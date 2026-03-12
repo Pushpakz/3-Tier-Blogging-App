@@ -1,11 +1,11 @@
 # ==============================================================
-# Jerney - DevSecOps CI/CD Pipeline
+# ScriptNest - DevSecOps CI/CD Pipeline
 # ==============================================================
 # Triggers on every push and pull request.
 # Stages: Lint → SCA → Build → Image Scan → IaC Scan → Deploy Manifest Update
 # ==============================================================
 
-name: Jerney DevSecOps Pipeline
+name: ScriptNest DevSecOps Pipeline
 
 on:
   push:
@@ -19,8 +19,8 @@ permissions:
 
 env:
   DOCKER_REGISTRY: ghcr.io
-  BACKEND_IMAGE: ghcr.io/${{ github.repository }}/jerney-backend
-  FRONTEND_IMAGE: ghcr.io/${{ github.repository }}/jerney-frontend
+  BACKEND_IMAGE: ghcr.io/${{ github.repository }}/ScriptNest-backend
+  FRONTEND_IMAGE: ghcr.io/${{ github.repository }}/ScriptNest-frontend
 
 jobs:
   # ==============================================================
@@ -115,7 +115,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ github.repository }}/jerney-${{ matrix.component }}
+          images: ghcr.io/${{ github.repository }}/ScriptNest-${{ matrix.component }}
           tags: |
             type=sha,prefix=
             type=ref,event=branch
@@ -151,12 +151,12 @@ jobs:
 
       - name: Build image for scanning
         run: |
-          docker build -t jerney-${{ matrix.component }}:scan ./${{ matrix.component }}
+          docker build -t ScriptNest-${{ matrix.component }}:scan ./${{ matrix.component }}
 
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: "jerney-${{ matrix.component }}:scan"
+          image-ref: "ScriptNest-${{ matrix.component }}:scan"
           format: "table"
           exit-code: "1"
           ignore-unfixed: true
@@ -237,20 +237,20 @@ jobs:
           IMAGE_TAG=${{ steps.sha.outputs.short }}
 
           # Update backend image
-          sed -i "s|image: .*jerney-backend.*|image: ${BACKEND_IMAGE}:${IMAGE_TAG}|g" k8s/jerney.yaml
-          sed -i "s|image: BACKEND_IMAGE_PLACEHOLDER|image: ${BACKEND_IMAGE}:${IMAGE_TAG}|g" k8s/jerney.yaml
+          sed -i "s|image: .*ScriptNest-backend.*|image: ${BACKEND_IMAGE}:${IMAGE_TAG}|g" k8s/ScriptNest.yaml
+          sed -i "s|image: BACKEND_IMAGE_PLACEHOLDER|image: ${BACKEND_IMAGE}:${IMAGE_TAG}|g" k8s/ScriptNest.yaml
 
           # Update frontend image
-          sed -i "s|image: .*jerney-frontend.*|image: ${FRONTEND_IMAGE}:${IMAGE_TAG}|g" k8s/jerney.yaml
-          sed -i "s|image: FRONTEND_IMAGE_PLACEHOLDER|image: ${FRONTEND_IMAGE}:${IMAGE_TAG}|g" k8s/jerney.yaml
+          sed -i "s|image: .*ScriptNest-frontend.*|image: ${FRONTEND_IMAGE}:${IMAGE_TAG}|g" k8s/ScriptNest.yaml
+          sed -i "s|image: FRONTEND_IMAGE_PLACEHOLDER|image: ${FRONTEND_IMAGE}:${IMAGE_TAG}|g" k8s/ScriptNest.yaml
 
           echo "✅ Updated images to tag: ${IMAGE_TAG}"
-          grep "image:" k8s/jerney.yaml
+          grep "image:" k8s/ScriptNest.yaml
 
       - name: Commit and push manifest update
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add k8s/jerney.yaml
+          git add k8s/ScriptNest.yaml
           git diff --cached --quiet || git commit -m "ci: update k8s images to ${{ steps.sha.outputs.short }} [skip ci]"
           git push
