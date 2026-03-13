@@ -111,7 +111,7 @@ spec:
       containers:
         - name: backend
           # Exact Docker Hub image name
-          image: pushpakz/scriptnest-backend:latest
+          image: ghcr.io/Pushpakz/3-Tier-Blogging-App/ScriptNest-backend:d221e40
           imagePullPolicy: Always
           ports:
             - containerPort: 5000
@@ -165,7 +165,7 @@ spec:
       containers:
         - name: frontend
           # Exact Docker Hub image name
-          image: pushpakz/scriptnest-frontend:latest
+          image: ghcr.io/Pushpakz/3-Tier-Blogging-App/ScriptNest-frontend:d221e40
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
