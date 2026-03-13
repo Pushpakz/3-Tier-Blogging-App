@@ -1,43 +1,27 @@
 # ==============================================================
-# ScriptNest Blog Platform - Kubernetes Manifest (Single File)
-# Includes: Namespace, Secrets, PVC (EBS), DB, Backend, Frontend
+# ScriptNest Blog Platform - Docker Hub Version
 # ==============================================================
 
-# ---- Namespace ----
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: ScriptNest
-  labels:
-    app.kubernetes.io/part-of: ScriptNest
-
+  name: scriptnest
 ---
-# ---- Database Secret ----
-# In production, use External Secrets Operator or Sealed Secrets.
-# This is base64 encoded for demo purposes.
-# echo -n 'ScriptNest_user' | base64 → amVybmV5X3VzZXI=
-# echo -n 'ScriptNest_pass_2026' | base64 → amVybmV5X3Bhc3NfMjAyNg==
-# echo -n 'ScriptNest_db' | base64 → amVybmV5X2Ri
-
 apiVersion: v1
 kind: Secret
 metadata:
-  name: ScriptNest-db-secret
-  namespace: ScriptNest
-  labels:
-    app.kubernetes.io/part-of: ScriptNest
+  name: scriptnest-db-secret
+  namespace: scriptnest
 type: Opaque
 data:
   POSTGRES_USER: amVybmV5X3VzZXI=
   POSTGRES_PASSWORD: amVybmV5X3Bhc3NfMjAyNg==
   POSTGRES_DB: amVybmV5X2Ri
-
 ---
-# ---- EBS StorageClass (gp3) ----
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
-  name: ScriptNest-ebs-sc
+  name: scriptnest-ebs-sc
 provisioner: ebs.csi.eks.amazonaws.com
 parameters:
   type: gp3
@@ -45,364 +29,156 @@ parameters:
 reclaimPolicy: Retain
 volumeBindingMode: WaitForFirstConsumer
 allowVolumeExpansion: true
-
 ---
-# ---- PersistentVolumeClaim for PostgreSQL (EBS) ----
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: ScriptNest-db-pvc
-  namespace: ScriptNest
-  labels:
-    app.kubernetes.io/part-of: ScriptNest
-    app.kubernetes.io/component: database
+  name: scriptnest-db-pvc
+  namespace: scriptnest
 spec:
-  accessModes:
-    - ReadWriteOnce
-  storageClassName: ScriptNest-ebs-sc
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: scriptnest-ebs-sc
   resources:
     requests:
       storage: 10Gi
-
 ---
-# ---- PostgreSQL Deployment ----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: ScriptNest-db
-  namespace: ScriptNest
-  labels:
-    app.kubernetes.io/name: ScriptNest-db
-    app.kubernetes.io/part-of: ScriptNest
-    app.kubernetes.io/component: database
+  name: scriptnest-db
+  namespace: scriptnest
 spec:
   replicas: 1
   strategy:
-    type: Recreate # Required for RWO volumes
+    type: Recreate
   selector:
     matchLabels:
-      app.kubernetes.io/name: ScriptNest-db
+      app: scriptnest-db
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: ScriptNest-db
-        app.kubernetes.io/part-of: ScriptNest
-        app.kubernetes.io/component: database
+        app: scriptnest-db
     spec:
-      # Security: don't automount service account token (DB doesn't need K8s API)
-      automountServiceAccountToken: false
-      tolerations:
-        - key: "karpenter.sh/disrupted"
-          operator: "Exists"
-          effect: "NoSchedule"
       containers:
         - name: postgres
           image: postgres:16-alpine
           ports:
             - containerPort: 5432
-              protocol: TCP
           envFrom:
             - secretRef:
-                name: ScriptNest-db-secret
+                name: scriptnest-db-secret
           volumeMounts:
             - name: db-storage
               mountPath: /var/lib/postgresql/data
               subPath: pgdata
-          resources:
-            requests:
-              cpu: 250m
-              memory: 256Mi
-            limits:
-              cpu: 500m
-              memory: 512Mi
-          # Security context
-          securityContext:
-            allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: false # Postgres needs write access
-            runAsNonRoot: false            # Postgres image runs initdb as root then drops
-          livenessProbe:
-            exec:
-              command: ["pg_isready", "-U", "ScriptNest_user", "-d", "ScriptNest_db"]
-            initialDelaySeconds: 15
-            periodSeconds: 10
-            timeoutSeconds: 5
-          readinessProbe:
-            exec:
-              command: ["pg_isready", "-U", "ScriptNest_user", "-d", "ScriptNest_db"]
-            initialDelaySeconds: 5
-            periodSeconds: 5
-            timeoutSeconds: 3
       volumes:
         - name: db-storage
           persistentVolumeClaim:
-            claimName: ScriptNest-db-pvc
-
+            claimName: scriptnest-db-pvc
 ---
-# ---- PostgreSQL Service (ClusterIP — internal only) ----
 apiVersion: v1
 kind: Service
 metadata:
-  name: ScriptNest-db
-  namespace: ScriptNest
-  labels:
-    app.kubernetes.io/name: ScriptNest-db
-    app.kubernetes.io/part-of: ScriptNest
-    app.kubernetes.io/component: database
+  name: scriptnest-db
+  namespace: scriptnest
 spec:
   type: ClusterIP
   selector:
-    app.kubernetes.io/name: ScriptNest-db
+    app: scriptnest-db
   ports:
     - port: 5432
       targetPort: 5432
-      protocol: TCP
-
 ---
-# ---- Backend Deployment ----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: ScriptNest-backend
-  namespace: ScriptNest
-  labels:
-    app.kubernetes.io/name: ScriptNest-backend
-    app.kubernetes.io/part-of: ScriptNest
-    app.kubernetes.io/component: backend
+  name: scriptnest-backend
+  namespace: scriptnest
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
-      app.kubernetes.io/name: ScriptNest-backend
+      app: scriptnest-backend
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: ScriptNest-backend
-        app.kubernetes.io/part-of: ScriptNest
-        app.kubernetes.io/component: backend
+        app: scriptnest-backend
     spec:
-      automountServiceAccountToken: false
-      tolerations:
-        - key: "karpenter.sh/disrupted"
-          operator: "Exists"
-          effect: "NoSchedule"
       initContainers:
         - name: wait-for-db
           image: busybox:1.36
-          command:
-            - sh
-            - -c
-            - |
-              echo "Waiting for ScriptNest-db:5432..."
-              until nc -z ScriptNest-db 5432; do
-                echo "DB not ready, retrying in 3s..."
-                sleep 3
-              done
-              echo "DB is ready!"
+          command: ['sh', '-c', 'until nc -z scriptnest-db 5432; do echo waiting for db; sleep 2; done;']
       containers:
         - name: backend
-          image: ghcr.io/Pushpakz/3-Tier-Blogging-App/ScriptNest-backend:5cbc885
+          # Exact Docker Hub image name
+          image: pushpakz/scriptnest-backend:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 5000
-              protocol: TCP
           env:
-            - name: PORT
-              value: "5000"
             - name: DB_HOST
-              value: "ScriptNest-db"
-            - name: DB_PORT
-              value: "5432"
+              value: "scriptnest-db"
             - name: DB_USER
               valueFrom:
                 secretKeyRef:
-                  name: ScriptNest-db-secret
+                  name: scriptnest-db-secret
                   key: POSTGRES_USER
             - name: DB_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: ScriptNest-db-secret
+                  name: scriptnest-db-secret
                   key: POSTGRES_PASSWORD
             - name: DB_NAME
               valueFrom:
                 secretKeyRef:
-                  name: ScriptNest-db-secret
+                  name: scriptnest-db-secret
                   key: POSTGRES_DB
-          resources:
-            requests:
-              cpu: 100m
-              memory: 128Mi
-            limits:
-              cpu: 300m
-              memory: 256Mi
-          # Security context
-          securityContext:
-            allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: true
-            runAsNonRoot: true
-            runAsUser: 1000
-            capabilities:
-              drop:
-                - ALL
-          livenessProbe:
-            httpGet:
-              path: /api/health
-              port: 5000
-            initialDelaySeconds: 10
-            periodSeconds: 15
-            timeoutSeconds: 5
-          readinessProbe:
-            httpGet:
-              path: /api/health
-              port: 5000
-            initialDelaySeconds: 5
-            periodSeconds: 5
-            timeoutSeconds: 3
-
 ---
-# ---- Backend Service (ClusterIP — internal only) ----
 apiVersion: v1
 kind: Service
 metadata:
-  name: ScriptNest-backend
-  namespace: ScriptNest
-  labels:
-    app.kubernetes.io/name: ScriptNest-backend
-    app.kubernetes.io/part-of: ScriptNest
-    app.kubernetes.io/component: backend
+  name: scriptnest-backend
+  namespace: scriptnest
 spec:
   type: ClusterIP
   selector:
-    app.kubernetes.io/name: ScriptNest-backend
+    app: scriptnest-backend
   ports:
     - port: 5000
       targetPort: 5000
-      protocol: TCP
-
 ---
-# ---- Frontend Deployment ----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: ScriptNest-frontend
-  namespace: ScriptNest
-  labels:
-    app.kubernetes.io/name: ScriptNest-frontend
-    app.kubernetes.io/part-of: ScriptNest
-    app.kubernetes.io/component: frontend
+  name: scriptnest-frontend
+  namespace: scriptnest
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
-      app.kubernetes.io/name: ScriptNest-frontend
+      app: scriptnest-frontend
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: ScriptNest-frontend
-        app.kubernetes.io/part-of: ScriptNest
-        app.kubernetes.io/component: frontend
+        app: scriptnest-frontend
     spec:
-      automountServiceAccountToken: false
-      tolerations:
-        - key: "karpenter.sh/disrupted"
-          operator: "Exists"
-          effect: "NoSchedule"
       containers:
         - name: frontend
-          image: ghcr.io/Pushpakz/3-Tier-Blogging-App/ScriptNest-frontend:5cbc885
+          # Exact Docker Hub image name
+          image: pushpakz/scriptnest-frontend:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8080
-              protocol: TCP
-          resources:
-            requests:
-              cpu: 50m
-              memory: 64Mi
-            limits:
-              cpu: 200m
-              memory: 128Mi
-          securityContext:
-            allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: false # Nginx needs write for cache/pid
-            runAsNonRoot: true
-            runAsUser: 101 # nginx user UID in alpine
-            capabilities:
-              drop:
-                - ALL
-          livenessProbe:
-            httpGet:
-              path: /
-              port: 8080
-            initialDelaySeconds: 5
-            periodSeconds: 10
-          readinessProbe:
-            httpGet:
-              path: /
-              port: 8080
-            initialDelaySeconds: 3
-            periodSeconds: 5
-
 ---
-# ---- Frontend Service (NodePort — for access via port-forward or node IP) ----
-# NOTE: Changed from LoadBalancer because this AWS account does not support
-# creating load balancers. Use `kubectl port-forward svc/ScriptNest-frontend 8080:80 -n ScriptNest`
-# to access the frontend locally.
 apiVersion: v1
 kind: Service
 metadata:
-  name: ScriptNest-frontend
-  namespace: ScriptNest
-  labels:
-    app.kubernetes.io/name: ScriptNest-frontend
-    app.kubernetes.io/part-of: ScriptNest
-    app.kubernetes.io/component: frontend
+  name: scriptnest-frontend
+  namespace: scriptnest
 spec:
   type: NodePort
   selector:
-    app.kubernetes.io/name: ScriptNest-frontend
+    app: scriptnest-frontend
   ports:
     - port: 80
       targetPort: 8080
-      protocol: TCP
-
----
-# ---- NetworkPolicy: DB only accepts traffic from Backend ----
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: ScriptNest-db-allow-backend-only
-  namespace: ScriptNest
-spec:
-  podSelector:
-    matchLabels:
-      app.kubernetes.io/name: ScriptNest-db
-  policyTypes:
-    - Ingress
-  ingress:
-    - from:
-        - podSelector:
-            matchLabels:
-              app.kubernetes.io/name: ScriptNest-backend
-      ports:
-        - port: 5432
-          protocol: TCP
-
----
-# ---- NetworkPolicy: Backend accepts traffic from Frontend only ----
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: ScriptNest-backend-allow-frontend-only
-  namespace: ScriptNest
-spec:
-  podSelector:
-    matchLabels:
-      app.kubernetes.io/name: ScriptNest-backend
-  policyTypes:
-    - Ingress
-  ingress:
-    - from:
-        - podSelector:
-            matchLabels:
-              app.kubernetes.io/name: ScriptNest-frontend
-      ports:
-        - port: 5000
-          protocol: TCP
-          
