@@ -14,9 +14,9 @@ metadata:
   namespace: scriptnest
 type: Opaque
 data:
-  POSTGRES_USER: amVybmV5X3VzZXI=
-  POSTGRES_PASSWORD: amVybmV5X3Bhc3NfMjAyNg==
-  POSTGRES_DB: amVybmV5X2Ri
+  POSTGRES_USER: c2NyaXB0bmVzdF91c2Vy
+  POSTGRES_PASSWORD: c2NyaXB0bmVzdF9wYXNzd29yZA==
+  POSTGRES_DB: c2NyaXB0bmVzdF9kYg==
 ---
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
@@ -111,7 +111,7 @@ spec:
       containers:
         - name: backend
           # Exact Docker Hub image name
-          image: ghcr.io/Pushpakz/3-Tier-Blogging-App/ScriptNest-backend:d221e40
+          image: pushpakz/backend:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 5000
@@ -165,7 +165,7 @@ spec:
       containers:
         - name: frontend
           # Exact Docker Hub image name
-          image: ghcr.io/Pushpakz/3-Tier-Blogging-App/ScriptNest-frontend:d221e40
+          image: pushpakz/frontend:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
