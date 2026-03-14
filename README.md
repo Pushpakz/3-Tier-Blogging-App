@@ -18,7 +18,7 @@ A Gen-Z vibe blog platform built with a 3-tier architecture — React frontend, 
 
 ---
 
-## ✨ Feature
+## ✨ Features
 
 - 📝 Create blog posts with emoji vibes
 - ✏️ Edit your existing posts
